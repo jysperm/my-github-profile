@@ -1,0 +1,24 @@
+{
+  "name": "my-github-profile",
+  "main": "./lib/main",
+  "version": "0.0.0",
+  "description": "Show your GitHub profile on the status bar",
+  "repository": "https://github.com/jysperm/my-github-profile",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "dependencies": {
+    "lodash": "^3.6.0",
+    "q": "^1.2.0",
+    "request": "^2.55.0",
+    "space-pen": "^5.1.1"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  }
+}
