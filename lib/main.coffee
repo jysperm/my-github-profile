@@ -9,29 +9,51 @@ class StatusBarView extends View
     @a href: '#', class: 'inline-block', click: 'onClick', 'Loading...'
 
   initialize: (statusBar) ->
+    @detail = 'Loading...'
     @tile = statusBar.addRightTile
       priority: 0
       item: @
 
   setProfile: (@profile) ->
-    console.log profile
-
     @text "#{@profile.login}: #{@profile.followers}"
 
-    @profile.total_repos = @profile.public_repos + (@profile.owned_private_repos ? 0)
+    total_repos = @profile.public_repos + (@profile.owned_private_repos ? 0)
 
-  onClick: ->
-    detail = """
+    @detail = """
       Username: #{@profile.login}
       Followers: #{@profile.followers}
-      Repos: #{@profile.total_repos}
+      Repos: #{total_repos}
     """
 
-    if @profile.notifications
-      detail += "\nUnread notifications: #{@profile.notifications.length}"
+    if @profile.repos
+      total_stargazers = _.sum @profile.repos, 'stargazers_count'
+      @detail += "\nTotal stars: #{total_stargazers}"
 
-    atom.notifications.addSuccess @profile.login,
-      detail: detail
+    if @profile.events
+      commits = _.flatten _.where(@profile.events, type: 'PushEvent').map ({repo, payload}) ->
+        return payload.commits.map ({sha}) ->
+          return {
+            repo_name: repo.name
+            commit_sha: sha
+          }
+
+      @detail += "\nRecent commits: #{commits.length}"
+
+      most_repos = _(commits).groupBy('repo_name').mapValues( (commits) ->
+        return {
+          repo_name: commits[0].repo_name
+          commits: commits.length
+        }
+      ).values().sortBy('commits').value()
+
+      @detail += "\nRecently working on: #{_.last(most_repos).repo_name}"
+
+    if @profile.notifications
+      @detail += "\nUnread notifications: #{@profile.notifications.length}"
+
+  onClick: ->
+    atom.notifications.addSuccess 'My GitHub Profile',
+      detail: @detail
 
   destroy: ->
     @tile.destroy()
@@ -48,8 +70,6 @@ module.exports = MyGithubProfile =
   package: require '../package'
 
   activate: ->
-    @githubUsername = atom.config.get 'my-github-profile.githubUsername'
-    @githubToken = atom.config.get 'my-github-profile.githubToken'
     @disposables = new CompositeDisposable()
 
     @disposables.add atom.commands.add 'atom-workspace',
@@ -64,11 +84,22 @@ module.exports = MyGithubProfile =
   serialize: ->
 
   refresh: ->
-    @fetchProfile().done (profile) =>
-      @statusBarView?.setProfile profile
+    @githubUsername = atom.config.get 'my-github-profile.githubUsername'
+    @githubToken = atom.config.get 'my-github-profile.githubToken'
 
-      @fetchAdded(profile).done =>
-        @statusBarView?.setProfile profile
+    @githubAPI("/users/#{@githubUsername}").done (profile) =>
+      setProfile = (result) =>
+        @statusBarView?.setProfile _.extend profile, result
+
+      @githubAPI("/users/#{@githubUsername}/repos").then (repos) ->
+        setProfile repos: repos
+
+      @githubAPI("/users/#{@githubUsername}/events?per_page=50").then (events) ->
+        setProfile events: events
+
+      if @githubToken
+        @githubAPI('/notifications').then (notifications) ->
+          setProfile notifications: notifications
 
   consumeStatusBar: (statusBar) ->
     @statusBarView = new StatusBarView statusBar
@@ -88,12 +119,3 @@ module.exports = MyGithubProfile =
           reject err
         else
           resolve JSON.parse body
-
-  fetchProfile: ->
-    @githubAPI "/users/#{@githubUsername}"
-
-  fetchAdded: (profile) ->
-    Q.all [
-      @githubAPI('/notifications').then (notifications) ->
-        profile.notifications = notifications
-    ]
