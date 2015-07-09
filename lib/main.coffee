@@ -15,7 +15,13 @@ class StatusBarView extends View
       item: @
 
   setProfile: (@profile) ->
-    @text "#{@profile.login}: #{@profile.followers}"
+    type = atom.config.get 'my-github-profile.statusbarNumber'
+
+    if type == 'notifications'
+      if @profile.notifications
+        @text "#{@profile.login}: #{@profile.notifications.length}"
+    else
+      @text "#{@profile.login}: #{@profile.followers}"
 
     total_repos = @profile.public_repos + (@profile.owned_private_repos ? 0)
 
@@ -66,6 +72,15 @@ module.exports = MyGithubProfile =
     githubToken:
       type: 'string'
       default: ''
+    refreshTimeout:
+      title: 'Refresh Interval (seconds)'
+      type: 'number'
+      default: 1800
+    statusbarNumber:
+      title: 'Show in statusbar'
+      type: 'string'
+      default: 'notifications'
+      enum: ['notifications', 'followers']
 
   package: require '../package'
 
@@ -75,7 +90,8 @@ module.exports = MyGithubProfile =
     @disposables.add atom.commands.add 'atom-workspace',
       'my-github-profile:refresh': => @refresh()
 
-    @refresh()
+    setTimeout @refresh.bind(@), 1000
+    setInterval @refresh.bind(@), 1000 * atom.config.get('my-github-profile.refreshTimeout')
 
   deactivate: ->
     @disposables.dispose()
@@ -84,6 +100,7 @@ module.exports = MyGithubProfile =
   serialize: ->
 
   refresh: ->
+    console.log "[my-github-profile] refreshing info..."
     @githubUsername = atom.config.get 'my-github-profile.githubUsername'
     @githubToken = atom.config.get 'my-github-profile.githubToken'
 
