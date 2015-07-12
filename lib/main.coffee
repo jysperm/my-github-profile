@@ -1,8 +1,8 @@
 {CompositeDisposable} = require 'atom'
-request = require 'request'
 {View} = require 'space-pen'
-_ = require 'lodash'
-Q = require 'q'
+request = null
+_ = null
+Q = null
 
 class StatusBarView extends View
   @content: ->
@@ -100,7 +100,12 @@ module.exports = MyGithubProfile =
   serialize: ->
 
   refresh: ->
-    console.log "[my-github-profile] refreshing info..."
+    request ?= require 'request'
+    _ ?= require 'lodash'
+    Q ?= require 'q'
+
+    console.log '[my-github-profile] refreshing info...'
+
     @githubUsername = atom.config.get 'my-github-profile.githubUsername'
     @githubToken = atom.config.get 'my-github-profile.githubToken'
 
