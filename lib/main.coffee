@@ -20,6 +20,8 @@ class StatusBarView extends View
     if type == 'notifications'
       if @profile.notifications
         @text "#{@profile.login}: #{@profile.notifications.length}"
+      else if !atom.config.get('my-github-profile.githubToken')
+        @text 'Need personal access tokens'
     else
       @text "#{@profile.login}: #{@profile.followers}"
 
@@ -79,7 +81,7 @@ module.exports = MyGithubProfile =
     statusbarNumber:
       title: 'Show in statusbar'
       type: 'string'
-      default: 'notifications'
+      default: 'followers'
       enum: ['notifications', 'followers']
 
   package: require '../package'
