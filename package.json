@@ -1,7 +1,7 @@
 {
   "name": "my-github-profile",
   "main": "./lib/main",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Show your GitHub profile on the status bar",
   "repository": "https://github.com/jysperm/my-github-profile",
   "license": "MIT",
