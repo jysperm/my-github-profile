@@ -18,8 +18,10 @@ class StatusBarView extends View
     type = atom.config.get 'my-github-profile.statusbarNumber'
 
     if type == 'notifications'
-      if @profile.notifications
+      if @profile.notifications.length > 0
         @text "#{@profile.login}: #{@profile.notifications.length}"
+      else if @profile.notifications
+        @text "#{@profile.login}"
       else if !atom.config.get('my-github-profile.githubToken')
         @text 'Need personal access tokens'
     else
